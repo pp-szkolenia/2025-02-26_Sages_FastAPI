@@ -49,10 +49,17 @@ def get_tasks():
 def get_users():
     return {"result": users_data}
 
+
 @app.get("/users/{user_id}")
 def get_user_by_id(user_id: int):
     target_user = get_item_by_id(users_data, user_id)
     return {"result": target_user}
+
+
+@app.get("/tasks/{task_id}")
+def get_task_by_id(task_id: int):
+    target_task = get_item_by_id(tasks_data, task_id)
+    return {"result": target_task}
 
 
 @app.post("/tasks")
