@@ -1,5 +1,7 @@
 # FastAPI – szkolenie
 
+https://patrykpalej.dev/szkolenia/restapi
+
 
 ## Uruchamianie
 Aby uruchomić API, należy wykonać w terminalu komendę
