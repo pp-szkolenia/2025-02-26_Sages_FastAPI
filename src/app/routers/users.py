@@ -5,7 +5,7 @@ from app.utils import get_item_index_by_id, get_item_by_id
 from app.models import UserBody
 
 
-router = APIRouter()
+router = APIRouter(tags=["users"], prefix="/users")
 
 users_data = [
     {"id": 1, "username": "Andrzej", "password": "qwerty123", "is_admin": True},
@@ -13,12 +13,12 @@ users_data = [
 ]
 
 
-@router.get("/users")
+@router.get("")
 def get_users():
     return JSONResponse(status_code=status.HTTP_200_OK, content={"result": users_data})
 
 
-@router.get("/users/{user_id}")
+@router.get("/{user_id}")
 def get_user_by_id(user_id: int):
     target_user = get_item_by_id(users_data, user_id)
 
@@ -30,7 +30,7 @@ def get_user_by_id(user_id: int):
     return JSONResponse(status_code=status.HTTP_200_OK, content={"result": target_user})
 
 
-@router.post("/users", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 def create_user(body: UserBody):
     new_user = body.model_dump()
     new_user_id = max([user["id"] for user in users_data]) + 1
@@ -41,7 +41,7 @@ def create_user(body: UserBody):
                         content={"message": "New user added", "details": new_user})
 
 
-@router.delete("/users/{user_id}")
+@router.delete("/{user_id}")
 def delete_user_by_id(user_id: int):
     target_index = get_item_index_by_id(users_data, user_id)
 
@@ -53,7 +53,7 @@ def delete_user_by_id(user_id: int):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.put("/users/{user_id}")
+@router.put("/{user_id}")
 def update_user_by_id(user_id: int, body: UserBody):
     target_index = get_item_index_by_id(users_data, user_id)
 

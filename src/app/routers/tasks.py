@@ -13,11 +13,11 @@ tasks_data = [
 ]
 
 
-@router.get("/tasks")
+@router.get("/tasks", tags=["tasks"])
 def get_tasks():
     return JSONResponse(status_code=status.HTTP_200_OK, content={"result": tasks_data})
 
-@router.get("/tasks/{task_id}")
+@router.get("/tasks/{task_id}", tags=["tasks"])
 def get_task_by_id(task_id: int):
     target_task = get_item_by_id(tasks_data, task_id)
     if target_task is None:
@@ -29,7 +29,7 @@ def get_task_by_id(task_id: int):
 
 
 
-@router.post("/tasks", status_code=status.HTTP_201_CREATED)
+@router.post("/tasks", status_code=status.HTTP_201_CREATED, tags=["tasks"])
 def create_task(body: TaskBody):
     new_task = body.model_dump()
     new_task_id = max([task["id"] for task in tasks_data]) + 1
@@ -41,7 +41,7 @@ def create_task(body: TaskBody):
                         status_code=status.HTTP_202_ACCEPTED)
 
 
-@router.delete("/tasks/{task_id}")
+@router.delete("/tasks/{task_id}", tags=["tasks"])
 def delete_task_by_id(task_id: int):
     target_index = get_item_index_by_id(tasks_data, task_id)
 
@@ -53,7 +53,7 @@ def delete_task_by_id(task_id: int):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.put("/tasks/{task_id}")
+@router.put("/tasks/{task_id}", tags=["tasks"])
 def update_task_by_id(task_id: int, body: TaskBody):
     target_index = get_item_index_by_id(tasks_data, task_id)
 
