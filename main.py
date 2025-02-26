@@ -4,10 +4,17 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
+
 class TaskBody(BaseModel):
     description: str
     priority: int | None = None
     is_completed: bool = False
+
+
+class UserBody(BaseModel):
+    username: str
+    password: str
+    is_admin: bool = False
 
 
 tasks_data = [
@@ -48,8 +55,11 @@ def create_task(body: TaskBody):
 
 
 @app.post("/users")
-def create_user(body: dict = Body(...)):
-    new_user = body
+def create_user(body: UserBody):
+    new_user = body.model_dump()
+    new_user_id = max([user["id"] for user in users_data]) + 1
+    new_user["id"] = new_user_id
     users_data.append(new_user)
 
     return {"message": "New user added", "details": new_user}
+
