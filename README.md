@@ -2,6 +2,8 @@
 
 https://github.com/pp-szkolenia/2025-02-26_Sages_FastAPI
 
+https://patrykpalej.dev/szkolenia/restapi
+
 
 ## Uruchamianie
 Aby uruchomić API, należy wykonać w terminalu komendę
