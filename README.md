@@ -1,6 +1,6 @@
 # FastAPI – szkolenie
 
-https://patrykpalej.dev/szkolenia/restapi
+https://github.com/pp-szkolenia/2025-02-26_Sages_FastAPI
 
 
 ## Uruchamianie
