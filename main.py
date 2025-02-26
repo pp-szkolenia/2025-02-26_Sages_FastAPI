@@ -125,3 +125,19 @@ def delete_user_by_id(user_id: int):
 
     users_data.pop(target_index)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.put("/users/{user_id}")
+def update_user_by_id(user_id: int, body: UserBody):
+    target_index = get_item_index_by_id(users_data, user_id)
+
+    if target_index is None:
+        message = {"error": f"User {user_id} not found."}
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
+
+    updated_user = body.model_dump()
+    updated_user["id"] = user_id
+    users_data[target_index] = updated_user
+
+    message = {"message": f"User {user_id} updated", "new_value": updated_user}
+    return JSONResponse(status_code=status.HTTP_200_OK, content=message)
