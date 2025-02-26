@@ -11,3 +11,34 @@ class UserBody(BaseModel):
     username: str
     password: str
     is_admin: bool = False
+
+
+class TaskResponse(BaseModel):
+    id: int
+    description: str
+    priority: int | None
+    is_completed: bool
+
+
+class GetAllTasksResponse(BaseModel):
+    result: list[TaskResponse]
+
+
+class GetSingleTaskResponse(BaseModel):
+    result: TaskResponse
+
+
+class CreateTaskResponse(BaseModel):
+    message: str
+    details: TaskResponse
+
+class UpdateTaskResponse(BaseModel):
+    message: str
+    new_value: TaskResponse
+
+class Error404Message(BaseModel):
+    error: str
+
+class Error404(BaseModel):
+    detail: Error404Message
+

@@ -2,22 +2,40 @@ from fastapi import HTTPException, status, Response, APIRouter
 from fastapi.responses import JSONResponse
 
 from app.utils import get_item_index_by_id, get_item_by_id
-from app.models import TaskBody
+from app.models import (
+    TaskBody, TaskResponse, GetAllTasksResponse,
+    GetSingleTaskResponse, CreateTaskResponse,
+    UpdateTaskResponse, Error404)
 
 
 router = APIRouter()
 
 tasks_data = [
-    {"id": 1, "description": "Learn FastAPI", "priority": 3, "is_completed": True},
+    {"description": "Learn FastAPI", "id": 1,  "priority": 3, "is_completed": True},
     {"id": 2, "description": "Do exercises", "priority": 2, "is_completed": False},
 ]
 
 
-@router.get("/tasks", tags=["tasks"])
+@router.get("/tasks", tags=["tasks"], response_model=GetAllTasksResponse)
 def get_tasks():
-    return JSONResponse(status_code=status.HTTP_200_OK, content={"result": tasks_data})
+    # tasks_result = [
+        # TaskResponse(id=task["id"],
+        #              description=task["description"],
+        #              priority=task["priority"],
+        #              is_completed=task["is_completed"]).model_dump()
+    #     TaskResponse()
+    #     for task in tasks_data
+    # ]
+    # return {"result": tasks_result}
+    tasks_data_copy = tasks_data[:]
+    tasks_data_copy[0]["new_key"] = "new_value"
+    return {"result": tasks_data_copy}
+    # return JSONResponse(status_code=status.HTTP_200_OK,
+    #                     content={"result": "tasks_data_copy"})
 
-@router.get("/tasks/{task_id}", tags=["tasks"])
+@router.get("/tasks/{task_id}", tags=["tasks"],
+            responses={404: {"model": Error404}, 200: {"model": GetSingleTaskResponse}},
+            response_model=GetSingleTaskResponse | Error404)
 def get_task_by_id(task_id: int):
     target_task = get_item_by_id(tasks_data, task_id)
     if target_task is None:
@@ -25,7 +43,8 @@ def get_task_by_id(task_id: int):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=message)
 
-    return JSONResponse(status_code=status.HTTP_200_OK, content={"result": target_task})
+    return {"result": target_task}
+    # return JSONResponse(status_code=status.HTTP_200_OK, content={"result": target_task})
 
 
 
