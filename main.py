@@ -65,6 +65,11 @@ def get_user_by_id(user_id: int):
 @app.get("/tasks/{task_id}")
 def get_task_by_id(task_id: int):
     target_task = get_item_by_id(tasks_data, task_id)
+    if target_task is None:
+        message = {"error": f"Task {task_id} not found."}
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=message)
+
     return {"result": target_task}
 
 
