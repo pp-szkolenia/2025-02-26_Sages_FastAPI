@@ -6,6 +6,7 @@ from app.models import (
     TaskBody, TaskResponse, GetAllTasksResponse,
     GetSingleTaskResponse, CreateTaskResponse,
     UpdateTaskResponse, Error404, Error404Message)
+from db.utils import connect_to_db
 
 
 router = APIRouter()
@@ -18,32 +19,28 @@ tasks_data = [
 
 @router.get("/tasks", tags=["tasks"], response_model=GetAllTasksResponse)
 def get_tasks():
-    # tasks_result = [
-        # TaskResponse(id=task["id"],
-        #              description=task["description"],
-        #              priority=task["priority"],
-        #              is_completed=task["is_completed"]).model_dump()
-    #     TaskResponse()
-    #     for task in tasks_data
-    # ]
-    # return {"result": tasks_result}
-    tasks_data_copy = tasks_data[:]
-    tasks_data_copy[0]["new_key"] = "new_value"
-    return {"result": tasks_data_copy}
-    # return JSONResponse(status_code=status.HTTP_200_OK,
-    #                     content={"result": "tasks_data_copy"})
+    conn, cursor = connect_to_db()
 
-@router.get("/tasks/{task_id}", tags=["tasks"],
-            responses={404: {"model": Error404}, 200: {"model": GetSingleTaskResponse}},
-            response_model=Error404)
+    cursor.execute("SELECT * FROM tasks")
+    tasks_data = cursor.fetchall()
+
+    conn.close()
+    cursor.close()
+    return {"result": tasks_data}
+
+
+@router.get("/tasks/{task_id}", tags=["tasks"])
 def get_task_by_id(task_id: int):
-    target_task = get_item_by_id(tasks_data, task_id)
-    if target_task is None:
-        message = {"error1": f"Task {task_id} not found."}
+    conn, cursor = connect_to_db()
+    cursor.execute("SELECT * FROM tasks WHERE id = %s", (task_id,))
+    target_task = cursor.fetchone()
+    conn.close()
+    cursor.close()
 
+    if not target_task:
+        message = {"error1": f"Task {task_id} not found."}
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=Error404(error=Error404Message(error=f"Task {task_id} not found.")).model_dump())
-        # return message
+                            detail=message)
 
     return {"result": target_task}
     # return JSONResponse(status_code=status.HTTP_200_OK, content={"result": target_task})
@@ -52,11 +49,18 @@ def get_task_by_id(task_id: int):
 
 @router.post("/tasks", status_code=status.HTTP_201_CREATED, tags=["tasks"])
 def create_task(body: TaskBody):
-    new_task = body.model_dump()
-    new_task_id = max([task["id"] for task in tasks_data]) + 1
-    new_task["id"] = new_task_id
+    conn, cursor = connect_to_db()
 
-    tasks_data.append(new_task)
+    insert_query_template = f"""INSERT INTO tasks (description, priority, is_completed)
+                                VALUES (%s, %s, %s) RETURNING *"""
+    insert_query_values = [body.description, body.priority, body.is_completed]
+
+    cursor.execute(insert_query_template, insert_query_values)
+    new_task = cursor.fetchone()
+    conn.commit()
+
+    conn.close()
+    cursor.close()
 
     return JSONResponse(content={"message": "New task added", "details": new_task},
                         status_code=status.HTTP_202_ACCEPTED)
@@ -64,27 +68,40 @@ def create_task(body: TaskBody):
 
 @router.delete("/tasks/{task_id}", tags=["tasks"])
 def delete_task_by_id(task_id: int):
-    target_index = get_item_index_by_id(tasks_data, task_id)
+    conn, cursor = connect_to_db()
 
-    if target_index is None:
+    delete_query = "DELETE FROM tasks WHERE id = %s RETURNING *;"
+    cursor.execute(delete_query, (task_id,))
+    deleted_task = cursor.fetchone()
+    conn.commit()
+
+    conn.close()
+    cursor.close()
+
+    if not deleted_task:
         message = {"error": f"Task {task_id} not found."}
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
 
-    tasks_data.pop(target_index)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.put("/tasks/{task_id}", tags=["tasks"])
 def update_task_by_id(task_id: int, body: TaskBody):
-    target_index = get_item_index_by_id(tasks_data, task_id)
+    conn, cursor = connect_to_db()
 
-    if target_index is None:
+    update_query = """
+        UPDATE tasks
+        SET description = %s, priority = %s, is_completed = %s WHERE id = %s RETURNING *;"""
+    cursor.execute(update_query, (body.description, body.priority, body.is_completed, task_id))
+    updated_task = cursor.fetchone()
+    conn.commit()
+
+    conn.close()
+    cursor.close()
+
+    if not updated_task:
         message = {"error": f"Task {task_id} not found."}
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
-
-    updated_task = body.model_dump()
-    updated_task["id"] = task_id
-    tasks_data[target_index] = updated_task
 
     message = {"message": f"Task {task_id} updated", "new_value": updated_task}
     return JSONResponse(status_code=status.HTTP_200_OK, content=message)

@@ -1,5 +1,6 @@
 import os
-import psycopg
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 
 
@@ -20,13 +21,17 @@ def get_connection_string():
     password = credentials["password"]
     host = credentials["host"]
     port = credentials["port"]
-    database = credentials["database"]
+    database = credentials["dbname"]
 
     return f"postgresql://{user}:{password}@{host}:{port}/{database}"
 
 
 def connect_to_db():
     credentials = get_db_credentials()
-    connection = psycopg.connect(**credentials)
+    connection = psycopg2.connect(**credentials, cursor_factory=RealDictCursor)
     cursor = connection.cursor()
     return connection, cursor
+
+
+connection, cursor = connect_to_db()
+print(connection, cursor)
