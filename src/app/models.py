@@ -40,5 +40,5 @@ class Error404Message(BaseModel):
     error: str
 
 class Error404(BaseModel):
-    detail: Error404Message
+    error: Error404Message
 

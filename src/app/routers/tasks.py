@@ -5,7 +5,7 @@ from app.utils import get_item_index_by_id, get_item_by_id
 from app.models import (
     TaskBody, TaskResponse, GetAllTasksResponse,
     GetSingleTaskResponse, CreateTaskResponse,
-    UpdateTaskResponse, Error404)
+    UpdateTaskResponse, Error404, Error404Message)
 
 
 router = APIRouter()
@@ -35,13 +35,15 @@ def get_tasks():
 
 @router.get("/tasks/{task_id}", tags=["tasks"],
             responses={404: {"model": Error404}, 200: {"model": GetSingleTaskResponse}},
-            response_model=GetSingleTaskResponse | Error404)
+            response_model=Error404)
 def get_task_by_id(task_id: int):
     target_task = get_item_by_id(tasks_data, task_id)
     if target_task is None:
-        message = {"error": f"Task {task_id} not found."}
+        message = {"error1": f"Task {task_id} not found."}
+
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=message)
+                            detail=Error404(error=Error404Message(error=f"Task {task_id} not found.")).model_dump())
+        # return message
 
     return {"result": target_task}
     # return JSONResponse(status_code=status.HTTP_200_OK, content={"result": target_task})
