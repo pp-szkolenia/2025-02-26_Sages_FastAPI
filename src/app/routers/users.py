@@ -1,6 +1,9 @@
-from fastapi import HTTPException, status, Response, APIRouter
+from fastapi import HTTPException, status, Response, APIRouter, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 
+from db.orm import get_session
+from db.models import User
 from app.utils import get_item_index_by_id, get_item_by_id
 from app.models import UserBody
 
@@ -14,56 +17,65 @@ users_data = [
 
 
 @router.get("")
-def get_users():
-    return JSONResponse(status_code=status.HTTP_200_OK, content={"result": users_data})
+def get_users(session: Session = Depends(get_session)):
+    users_data = session.query(User).all()
+    # return JSONResponse(status_code=status.HTTP_200_OK, content={"result": users_data})
+    return {"result": users_data}
 
 
 @router.get("/{user_id}")
-def get_user_by_id(user_id: int):
-    target_user = get_item_by_id(users_data, user_id)
+def get_user_by_id(user_id: int, session: Session = Depends(get_session)):
+    # target_user = get_item_by_id(users_data, user_id)
+    target_user = session.query(User).filter_by(id_number=user_id).first()
 
-    if target_user is None:
+    if not target_user:
         message = {"error": f"User {user_id} not found."}
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=message)
 
-    return JSONResponse(status_code=status.HTTP_200_OK, content={"result": target_user})
+    return {"result": target_user}
+    # return JSONResponse(status_code=status.HTTP_200_OK, content={"result": target_user})
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-def create_user(body: UserBody):
+def create_user(body: UserBody, session: Session = Depends(get_session)):
     new_user = body.model_dump()
-    new_user_id = max([user["id"] for user in users_data]) + 1
-    new_user["id"] = new_user_id
-    users_data.append(new_user)
+    new_user = User(**new_user)
+    session.add(new_user)
+    session.commit()
+    session.refresh(new_user)
 
-    return JSONResponse(status_code=status.HTTP_201_CREATED,
-                        content={"message": "New user added", "details": new_user})
+    return {"message": "New user added", "details": new_user}
+
+    # return JSONResponse(status_code=status.HTTP_201_CREATED,
+    #                     content={"message": "New user added", "details": new_user.__dict__})
 
 
 @router.delete("/{user_id}")
-def delete_user_by_id(user_id: int):
-    target_index = get_item_index_by_id(users_data, user_id)
+def delete_user_by_id(user_id: int, session: Session = Depends(get_session)):
+    deleted_user = session.query(User).filter_by(id_number=user_id).first()
 
-    if target_index is None:
+    if not deleted_user:
         message = {"error": f"User {user_id} not found."}
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
 
-    users_data.pop(target_index)
+    session.delete(deleted_user)
+    session.commit()
+
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.put("/{user_id}")
-def update_user_by_id(user_id: int, body: UserBody):
-    target_index = get_item_index_by_id(users_data, user_id)
+def update_user_by_id(user_id: int, body: UserBody, session: Session = Depends(get_session)):
+    filter_query = session.query(User).filter_by(id_number=user_id)
 
-    if target_index is None:
+    if not filter_query.first():
         message = {"error": f"User {user_id} not found."}
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
 
-    updated_user = body.model_dump()
-    updated_user["id"] = user_id
-    users_data[target_index] = updated_user
+    filter_query.update(body.model_dump())
+    session.commit()
+    updated_user = filter_query.first()
 
-    message = {"message": f"User {user_id} updated", "new_value": updated_user}
-    return JSONResponse(status_code=status.HTTP_200_OK, content=message)
+    return {"message": f"User {user_id} updated", "new_value": updated_user}
+    # return JSONResponse(status_code=status.HTTP_200_OK, content=message)

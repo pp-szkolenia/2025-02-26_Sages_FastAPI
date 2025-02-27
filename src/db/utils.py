@@ -33,5 +33,12 @@ def connect_to_db():
     return connection, cursor
 
 
-connection, cursor = connect_to_db()
-print(connection, cursor)
+def get_session():
+    credentials = get_db_credentials()
+    connection = psycopg2.connect(**credentials, cursor_factory=RealDictCursor)
+    cursor = connection.cursor()
+    try:
+        yield connection, cursor
+    finally:
+        connection.close()
+        cursor.close()

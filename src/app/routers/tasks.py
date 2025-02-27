@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status, Response, APIRouter
+from fastapi import HTTPException, status, Response, APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from app.utils import get_item_index_by_id, get_item_by_id
@@ -11,6 +11,7 @@ from db.utils import connect_to_db
 
 router = APIRouter()
 
+
 tasks_data = [
     {"description": "Learn FastAPI", "id": 1,  "priority": 3, "is_completed": True},
     {"id": 2, "description": "Do exercises", "priority": 2, "is_completed": False},
@@ -18,14 +19,13 @@ tasks_data = [
 
 
 @router.get("/tasks", tags=["tasks"], response_model=GetAllTasksResponse)
-def get_tasks():
-    conn, cursor = connect_to_db()
+def get_tasks(conn_cursor: tuple = Depends(connect_to_db)):
+    conn, cursor = conn_cursor
 
     cursor.execute("SELECT * FROM tasks")
     tasks_data = cursor.fetchall()
+    # records = db_connector.get_records(table_name)
 
-    conn.close()
-    cursor.close()
     return {"result": tasks_data}
 
 
