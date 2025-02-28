@@ -1,7 +1,7 @@
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 
-from app.routers import users, tasks
+from app.routers import users, tasks, auth
 
 
 app = FastAPI(
@@ -20,3 +20,4 @@ def root():
 
 app.include_router(users.router)
 app.include_router(tasks.router)
+app.include_router(auth.router)

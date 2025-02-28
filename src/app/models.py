@@ -42,3 +42,12 @@ class Error404Message(BaseModel):
 class Error404(BaseModel):
     error: Error404Message
 
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
