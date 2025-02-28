@@ -1,25 +1,29 @@
+import os
+
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from fastapi import HTTPException, Depends, status
+from dotenv import load_dotenv
 
 from app.models import TokenData
 
 
+load_dotenv()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login1")
 
-SECRET_KEY = "bc714fc37a3e6f18aa8e3dbce9cb5c9bebf1c7b48fd338472d119d52967a583e"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 5
+SECRET_KEY = os.environ["SECRET_KEY"]
+ALGORITHM = os.environ["ALGORITHM"]
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"])
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
 
     if expires_delta:
-        expire = datetime.now() + expires_delta
+        expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -30,12 +34,15 @@ def verify_access_token(token: str, credentials_exception: HTTPException):
     try:
         payload = jwt.decode(token, SECRET_KEY, ALGORITHM)
         user_id = payload.get("user_id")
+        is_admin = payload.get("is_admin")
+
         if user_id is None:
             raise credentials_exception
 
-        token_data = TokenData(user_id=user_id)
+        token_data = TokenData(user_id=user_id, is_admin=is_admin)
         return token_data
-    except JWTError:
+    except JWTError as error:
+        print(error)
         raise credentials_exception
 
 

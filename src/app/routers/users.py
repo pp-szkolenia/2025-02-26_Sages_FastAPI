@@ -5,8 +5,9 @@ from sqlalchemy import func, asc, desc
 
 from db.orm import get_session
 from db.models import User
-from app.models import UserBody
+from app.models import UserBody, TokenData
 from app.utils import hash_password_in_body
+from app import oauth2
 
 
 router = APIRouter(tags=["users"], prefix="/users")
@@ -19,6 +20,7 @@ users_data = [
 
 @router.get("")
 def get_users(session: Session = Depends(get_session),
+              _: TokenData = Depends(oauth2.get_current_user),
               is_admin: bool | None = Query(alias="isAdmin", default=None),
               password_limit: int | None = None,
               sort_username: str | None = None):
@@ -75,7 +77,11 @@ def create_user(body: UserBody, session: Session = Depends(get_session)):
 
 
 @router.delete("/{user_id}")
-def delete_user_by_id(user_id: int, session: Session = Depends(get_session)):
+def delete_user_by_id(user_id: int, session: Session = Depends(get_session),
+                      user_data: TokenData = Depends(oauth2.get_current_user)):
+    if not user_data.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                             detail="Only admin can delete users")
     deleted_user = session.query(User).filter_by(id_number=user_id).first()
 
     if not deleted_user:

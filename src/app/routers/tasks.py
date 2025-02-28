@@ -50,6 +50,10 @@ def get_task_by_id(task_id: int):
 @router.post("/tasks", status_code=status.HTTP_201_CREATED, tags=["tasks"])
 def create_task(body: TaskBody,
                 user_data: TokenData = Depends(oauth2.get_current_user)):
+    if not user_data.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Only admin can perform this operation")
+
     conn, cursor = connect_to_db()
 
     insert_query_template = f"""INSERT INTO tasks (description, priority, is_completed)
@@ -90,7 +94,8 @@ def delete_task_by_id(task_id: int):
 
 
 @router.put("/tasks/{task_id}", tags=["tasks"])
-def update_task_by_id(task_id: int, body: TaskBody):
+def update_task_by_id(task_id: int, body: TaskBody,
+                      user_data: TokenData = Depends(oauth2.get_current_user)):
     conn, cursor = connect_to_db()
 
     update_query = """
@@ -107,5 +112,6 @@ def update_task_by_id(task_id: int, body: TaskBody):
         message = {"error": f"Task {task_id} not found."}
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
 
-    message = {"message": f"Task {task_id} updated", "new_value": updated_task}
+    message = {"message": f"Task {task_id} updated by user: {user_data.user_id}",
+               "new_value": updated_task}
     return JSONResponse(status_code=status.HTTP_200_OK, content=message)
