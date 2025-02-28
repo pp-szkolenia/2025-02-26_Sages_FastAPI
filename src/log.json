@@ -1,0 +1,14 @@
+[
+  {
+    "endpoint_URL": "http://localhost:8000/tasks",
+    "method": "GET",
+    "timestamp": "2025-02-28 12:15:33.786262",
+    "response_code": 200
+  },
+  {
+    "endpoint_URL": "http://localhost:8000/users/112",
+    "method": "PUT",
+    "timestamp": "2025-02-28 12:16:00.585376",
+    "response_code": 404
+  }
+]
