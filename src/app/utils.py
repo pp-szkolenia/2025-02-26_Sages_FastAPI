@@ -1,11 +1,9 @@
-def get_item_by_id(items_list, item_id):
-    for item in items_list:
-        if item["id"] == item_id:
-            return item
-    return None
+from passlib.context import CryptContext
 
-def get_item_index_by_id(items_list, item_id):
-    for i, item in enumerate(items_list):
-        if item["id"] == item_id:
-            return i
-    return None
+from app.models import UserBody
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password_in_body(user_body: UserBody):
+    user_body.password = pwd_context.hash(user_body.password)
+    return user_body

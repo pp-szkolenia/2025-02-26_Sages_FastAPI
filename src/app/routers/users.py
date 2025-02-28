@@ -1,11 +1,12 @@
-from fastapi import HTTPException, status, Response, APIRouter, Depends
+from fastapi import HTTPException, status, Response, APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func, asc, desc
 
 from db.orm import get_session
 from db.models import User
-from app.utils import get_item_index_by_id, get_item_by_id
 from app.models import UserBody
+from app.utils import hash_password_in_body
 
 
 router = APIRouter(tags=["users"], prefix="/users")
@@ -17,10 +18,31 @@ users_data = [
 
 
 @router.get("")
-def get_users(session: Session = Depends(get_session)):
-    users_data = session.query(User).all()
+def get_users(session: Session = Depends(get_session),
+              is_admin: bool | None = Query(alias="isAdmin", default=None),
+              password_limit: int | None = None,
+              sort_username: str | None = None):
+    # users_data = User.find_all()
+    users_data = session.query(User)
+    if is_admin is not None:
+        users_data = users_data.filter_by(is_admin=is_admin)
+
+    if password_limit is not None:
+        users_data = users_data.filter(func.length(User.password) <= password_limit)
+
+    if sort_username in ["asc", "ascending", "ASC"]:
+        users_data = users_data.order_by(asc(User.username))
+    elif sort_username in ["desc", "descending", "DESC"]:
+        users_data = users_data.order_by(desc(User.username))
+    elif sort_username is None:
+        pass
+    else:
+        raise Exception(f"Unknown sort method: {sort_username}")
+
+
+    result = users_data.all()
     # return JSONResponse(status_code=status.HTTP_200_OK, content={"result": users_data})
-    return {"result": users_data}
+    return {"result": result}
 
 
 @router.get("/{user_id}")
@@ -39,6 +61,7 @@ def get_user_by_id(user_id: int, session: Session = Depends(get_session)):
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_user(body: UserBody, session: Session = Depends(get_session)):
+    body = hash_password_in_body(body)
     new_user = body.model_dump()
     new_user = User(**new_user)
     session.add(new_user)
@@ -67,6 +90,7 @@ def delete_user_by_id(user_id: int, session: Session = Depends(get_session)):
 
 @router.put("/{user_id}")
 def update_user_by_id(user_id: int, body: UserBody, session: Session = Depends(get_session)):
+    body = hash_password_in_body(body)
     filter_query = session.query(User).filter_by(id_number=user_id)
 
     if not filter_query.first():
