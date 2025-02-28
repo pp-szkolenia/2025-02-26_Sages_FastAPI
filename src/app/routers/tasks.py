@@ -4,8 +4,9 @@ from fastapi.responses import JSONResponse
 from app.models import (
     TaskBody, TaskResponse, GetAllTasksResponse,
     GetSingleTaskResponse, CreateTaskResponse,
-    UpdateTaskResponse, Error404, Error404Message)
+    UpdateTaskResponse, Error404, Error404Message, TokenData)
 from db.utils import connect_to_db
+from app import oauth2
 
 
 router = APIRouter()
@@ -47,7 +48,8 @@ def get_task_by_id(task_id: int):
 
 
 @router.post("/tasks", status_code=status.HTTP_201_CREATED, tags=["tasks"])
-def create_task(body: TaskBody):
+def create_task(body: TaskBody,
+                user_data: TokenData = Depends(oauth2.get_current_user)):
     conn, cursor = connect_to_db()
 
     insert_query_template = f"""INSERT INTO tasks (description, priority, is_completed)
@@ -61,8 +63,11 @@ def create_task(body: TaskBody):
     conn.close()
     cursor.close()
 
-    return JSONResponse(content={"message": "New task added", "details": new_task},
-                        status_code=status.HTTP_202_ACCEPTED)
+    return JSONResponse(
+        content={"message": f"New task added by user: {user_data.user_id}",
+                    "details": new_task},
+        status_code=status.HTTP_202_ACCEPTED
+    )
 
 
 @router.delete("/tasks/{task_id}", tags=["tasks"])
